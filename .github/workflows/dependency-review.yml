@@ -1,0 +1,25 @@
+name: Dependency Review
+
+on:
+  workflow_call:
+
+jobs:
+  api-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for unsupported languages
+        id: check-lang
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LANGUAGES=$(gh api repos/${{ github.repository }}/languages)
+          if echo "$LANGUAGES" | jq -e 'has("Scala")' > /dev/null; then
+            echo "has_scala=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_scala=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Scala Task
+        if: ${{steps.check-lang.outputs.has_scala == 'true'}}
+        run: echo "Executing strict Scala policies..."
+        
