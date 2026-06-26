@@ -8,13 +8,13 @@ permissions:
   pull-requests: write
 
 jobs:
-  # We have to update the dependency graph for the current branch manually
-  # if the repo contains unsupported languages.
   dependency-review:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
+      # We have to update the dependency graph for the current branch manually
+      # if the repo contains unsupported languages.
       - name: Detect languages
         id: detect
         run: |
