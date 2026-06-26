@@ -4,17 +4,18 @@ on:
   workflow_call:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
-  dependency-review:
+  # We have to update the dependency graph for the current branch manually
+  # if the repo contains unsupported languages.
+  submit-dependencies:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
 
-      # We have to update the dependency graph for the current branch manually
-      # if the repo contains unsupported languages.
       - name: Check for unsupported languages
         id: check-lang
         env:
@@ -27,11 +28,21 @@ jobs:
             echo "has_scala=false" >> $GITHUB_OUTPUT
           fi
 
-      - uses: scalacenter/sbt-dependency-submission@v3
-        if: ${{steps.check-lang.outputs.has_scala == 'true'}}
+      - uses: scalacenter/sbt-dependency-submission@d84eef4c09e633bcf5f113bcad7fd5e9af1baee9 # v3.2.3
+        if: ${{ steps.check-lang.outputs.has_scala == 'true' }}
+
+  dependency-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    needs: submit-dependencies
+    steps:
+      - uses: actions/checkout@v7
 
       - uses: actions/dependency-review-action@v5
         with:
           # TODO is this helpful?
           show-patched-versions: true
           comment-summary-in-pr: always
+          
