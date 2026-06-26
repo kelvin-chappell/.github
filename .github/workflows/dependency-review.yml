@@ -18,23 +18,25 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Check for unsupported languages
-        id: check-lang
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Detect languages
+        id: detect
         run: |
-          LANGUAGES=$(gh api repos/${{ github.repository }}/languages)
-          if echo "$LANGUAGES" | jq -e 'has("Scala")' > /dev/null; then
-            echo "has_scala=true" >> $GITHUB_OUTPUT
-          else
-            echo "has_scala=false" >> $GITHUB_OUTPUT
-          fi
+          REPO_LANGUAGES=$(gh api repos/${{ github.repository }}/languages | jq -r 'keys[]')
+          
+          echo "has_scala=$(echo "$REPO_LANGUAGES" | grep -qx 'Scala' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_kotlin=$(echo "$REPO_LANGUAGES" | grep -qx 'Kotlin' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
-      - uses: sbt/setup-sbt@3afe9cf056c5d139bfc46579af1192d77a2f0821 # v1.4.0
-        if: ${{ steps.check-lang.outputs.has_scala == 'true' }}
+      - name: Set up SBT
+        if: ${{ steps.detect.outputs.has_scala == 'true' }}
+        uses: sbt/setup-sbt@3afe9cf056c5d139bfc46579af1192d77a2f0821 # v1.4.0
 
-      - uses: scalacenter/sbt-dependency-submission@d84eef4c09e633bcf5f113bcad7fd5e9af1baee9 # v3.2.3
-        if: ${{ steps.check-lang.outputs.has_scala == 'true' }}
+      - name: Submit Scala dependencies 
+        if: ${{ steps.detect.outputs.has_scala == 'true' }}
+        uses: scalacenter/sbt-dependency-submission@d84eef4c09e633bcf5f113bcad7fd5e9af1baee9 # v3.2.3
+
+      - name: Submit Kotlin dependencies
+        if: ${{ steps.detect.outputs.has_kotlin == 'true' }}
+        uses: gradle/actions/dependency-submission@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
 
   dependency-review:
     runs-on: ubuntu-latest
@@ -47,7 +49,4 @@ jobs:
 
       - uses: actions/dependency-review-action@v5
         with:
-          # TODO is this helpful?
-          show-patched-versions: true
           comment-summary-in-pr: always
-          
