@@ -2,6 +2,8 @@ name: Dependency Review
 
 on:
   workflow_call:
+  # To test on this repo
+  pull_request: 
 
 permissions:
   contents: read
