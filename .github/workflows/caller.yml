@@ -1,6 +1,6 @@
 name: Dependency Review Central
 
-on: workflow_dispatch
+on: pull_request
 
 jobs:
   call-dependency-review:
